@@ -4,6 +4,7 @@ import numpy as np
 import joblib  # For loading the serialized model
 import pandas as pd  # For data manipulation
 from flask import Flask, request, jsonify  # For creating the Flask API
+from custom_transformers import SuperKartPreprocessor #T ransformer pipeline added here since its a class in the main jupyter file
 
 # Initialize Flask app with the standard module name
 superkart_api = Flask(__name__)
