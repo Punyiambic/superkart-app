@@ -26,20 +26,24 @@ def predict_sales():
     # Get JSON data from the incoming POST request
     data = request.get_json()
 
-    # Extract relevant features from input data
     sample = {
-        'Product_Weight': data['Product_Weight'],
-        'Product_Sugar_Content': data['Product_Sugar_Content'],
-        'Product_Allocated_Area': data['Product_Allocated_Area'],
-        'Product_MRP': data['Product_MRP'],
-        'Store_Size': data['Store_Size'],
-        'Store_Location_City_Type': data['Store_Location_City_Type'],
-        'Store_Type': data['Store_Type'],
-        'Product_Id_char': data['Product_Id_char'],
-        'Store_Age_Years': data['Store_Age_Years'],
-        'Product_Type_Category': data['Product_Type_Category']
+        "Product_Weight": float(data["Product_Weight"]),
+        "Product_Sugar_Content": data["Product_Sugar_Content"],
+        "Product_Allocated_Area": float(data["Product_Allocated_Area"]),
+        "Product_MRP": float(data["Product_MRP"]),
+        "Store_Size": data["Store_Size"],
+        "Store_Location_City_Type": data["Store_Location_City_Type"],
+        "Store_Type": data["Store_Type"],
+        # Rename to the exact column names required by your pipeline:
+        "Product_Type": data["Product_Type_Category"],
+        "Product_Id": data.get("Product_Id_char", "FD")
+        + "001",  # Ensures .str[:2] works
+        "Store_Establishment_Year": 2026 - int(data["Store_Age_Years"]),
+        "Store_Id": data.get(
+            "Store_Id", "OUT049"
+        ),  # Required by nominal ColumnTransformer
     }
-
+    
     # Convert the extracted dictionary into a single-row DataFrame
     input_data = pd.DataFrame([sample])
 
