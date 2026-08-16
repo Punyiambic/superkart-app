@@ -1,9 +1,11 @@
-# custom_transformers.py
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 class SuperKartPreprocessor(BaseEstimator, TransformerMixin):
+  """Performs data cleaning, category-level imputations, 
+  and feature engineering to prepare data for modeling."""
 
   def __init__(self, current_year=2026):
     self.current_year = current_year
