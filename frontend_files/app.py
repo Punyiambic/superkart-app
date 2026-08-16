@@ -1,12 +1,17 @@
+import pandas as pd
 import requests
 import streamlit as st
 
-# Application Title & Description
-st.set_page_config(page_title="SuperKart Sales Predictor", layout="centered")
-st.title("🛒 SuperKart Retail Sales Prediction App")
-st.markdown("Enter product and store characteristics to forecast total sales revenue.")
+# Base API URL configuration
+API_BASE_URL = "https://friendly-guacamole-pjj6p47p94xvcrj4p-7860.app.github.dev"
 
-# Input fields for product and store data
+# Application Configuration & Title
+st.set_page_config(page_title="SuperKart Sales Predictor", layout="wide")
+st.title("🛒 SuperKart Retail Sales Prediction App")
+st.markdown("Forecast total product sales revenue using single-record input or bulk CSV batch upload.")
+
+# Single Prediction
+st.subheader("Single Record Prediction")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -31,7 +36,6 @@ with col2:
         ]
     )
 
-# Prepare dictionary payload matching backend API schema
 product_data = {
     "Product_Weight": Product_Weight,
     "Product_Sugar_Content": Product_Sugar_Content,
@@ -45,13 +49,10 @@ product_data = {
     "Product_Type_Category": Product_Type_Category,
 }
 
-# Prediction button and API request
-if st.button("Predict Sales Revenue", type="primary", use_container_width=True):
-    # Use internal localhost connection in Codespaces
-    api_url = "https://friendly-guacamole-pjj6p47p94xvcrj4p-7860.app.github.dev/v1/predict"
-
+if st.button("Predict Single Record", type="primary", use_container_width=True):
+    predict_url = f"{API_BASE_URL}/v1/predict"
     try:
-        response = requests.post(api_url, json=product_data)
+        response = requests.post(predict_url, json=product_data)
         if response.status_code == 200:
             result = response.json()
             predicted_sales = result["Sales"]
@@ -59,4 +60,45 @@ if st.button("Predict Sales Revenue", type="primary", use_container_width=True):
         else:
             st.error(f"Error in API request (Status code: {response.status_code}): {response.text}")
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Failed to connect to the backend server. Make sure your Docker container is running on port 7860.")
+        st.error("⚠️ Failed to connect to backend server. Ensure the Flask API is running on port 7860.")
+
+st.divider()
+
+# Batch CSV Prediction
+
+st.subheader("Batch Sales Prediction (CSV Upload)")
+uploaded_file = st.file_uploader("Upload CSV file for batch predictions", type=["csv"])
+
+if uploaded_file is not None:
+    preview_df = pd.read_csv(uploaded_file)
+    st.write(f"Uploaded **{len(preview_df)}** records. Preview:")
+    st.dataframe(preview_df.head(), use_container_width=True)
+
+    if st.button("Run Batch Prediction", type="secondary", use_container_width=True):
+        bulk_url = f"{API_BASE_URL}/v1/predict-bulk"
+        files = {
+            "file": (uploaded_file.name, uploaded_file.getvalue(), "text/csv")
+        }
+
+        with st.spinner("Processing batch predictions..."):
+            try:
+                response = requests.post(bulk_url, files=files)
+                if response.status_code == 200:
+                    data = response.json()
+                    result_df = pd.DataFrame(data["data"])
+                    
+                    st.success(f"Successfully processed {data['total_records']} records!")
+                    st.dataframe(result_df, use_container_width=True)
+
+                    csv_download = result_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="📥 Download Predictions CSV",
+                        data=csv_download,
+                        file_name="superkart_sales_predictions.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                else:
+                    st.error(f"API Error (Status code: {response.status_code}): {response.text}")
+            except requests.exceptions.ConnectionError:
+                st.error("⚠️ Failed to connect to backend server. Ensure the Flask API is running on port 7860.")
